@@ -12,7 +12,7 @@ kb = 1.381e-23; %J/K
 v_n = 1/4*sqrt((8*kb*300)/(pi*mi)); %m/s
 
 Rppu = .200; %ohms
-f_c = 0.1; %magnetic confinement (low is more confined
+f_c = 0.01; %magnetic confinement (low is more confined
 
 w = 2*pi*f_rmf*1000; %rad/s;
 
@@ -21,7 +21,7 @@ dt_max = 1e-7;
 dt = dt_max;
     
 %% INITIALIZATION
-Ncells = 30;
+Ncells = 25;
 
 % %Set up grid
 
@@ -69,7 +69,7 @@ count = 0;
 SumR = 10;
 N = 0;
 
-while sqrt(SumR) > 1e-5
+while sqrt(SumR) > 1e-6
     %% SINGLE TIME STEP 
     R = R.*0; %initialize residuals
     u_next = u_next.*0; %initralize update state
@@ -235,11 +235,14 @@ end
 sigv_rad = 1.93e-19 * (exp(-11.6/T_eV))/(sqrt(T_eV)) * avg_speed;
 
 %collision frequencies
-ln_lambda = 23 - (0.5*log((u(2)*10e-6)/(T_eV^3)));
+ln_lambda = 23 - (0.5*log((u(2)*1e-6)/(T_eV^3)));
 nu_ei = (u(2) * 2.9e-12* ln_lambda) ./ (T_eV.^(3/2));
 
 cross_en =  6.6e-19 * ((T_eV/4 - 0.1)./(1 + (T_eV/4).^1.6));
-nu_en = u(1) *sqrt(e*T_eV/me)*cross_en;
+%nu_en = u(1) *sqrt(e*T_eV/me)*cross_en;
+nu_en = u(1) *sqrt((8*e*T_eV)/(pi()*me))*cross_en;
+
+%the velocity is different in different books
 
 %inelastic collision energy losses 
    eps_iz = e*12.1; %J
@@ -258,8 +261,10 @@ R_irad = u(2).^2.*sigv_rad;
 R_wall = 0.6*u(2).*sqrt(pe./(u(2)*mi))*2/r*f_c;
 
 %Electric fields
-%E_t = + me/e*v_t*(nu_ei + nu_en) + v_e*Br; %sign is irrelevant here. 
-E_t = me/e*v_t*(nu_ei + nu_en); 
+v_e = u(3)./u(2);
+
+%E_t = + me/e*v_t*(nu_ei + nu_en); %sign is irrelevant here. 
+E_t = me/e*v_t*(nu_en) +v_e*Br; %nu_ei
 
 F = e*u(2)*E_t; % N/m^3
 P = 3/4*pi*F*w*r^3; % W/m % factor 3/4 = 9/8 * 2/3 to correct for improper area integral 
@@ -267,7 +272,7 @@ P = 3/4*pi*F*w*r^3; % W/m % factor 3/4 = 9/8 * 2/3 to correct for improper area 
 S = [ - R_iz + R_wall, ...
      + R_iz - R_wall, ...
      + e*u(2)/mi*v_t*Br, ...
-     - R_iz*eps_iz - R_wall*eps_wall - R_nrad*eps_nrad - R_irad*eps_irad + 9/8*e*(u(2)*v_t*E_t)]; %+ u(2)*0.5*r^2*nu_ei*me*w^2];
+     - R_iz*eps_iz - R_wall*eps_wall - R_nrad*eps_nrad  + 9/8*e*(u(2)*v_t*E_t)]; %+ u(2)*0.5*r^2*nu_ei*me*w^2]; %- R_irad*eps_irad
                                                                            %9/8 to correct for not perfroming area average with v_t^2.
 %note power above = joule heating * A;
 
